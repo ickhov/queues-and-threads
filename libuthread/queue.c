@@ -122,6 +122,7 @@ int queue_delete(queue_t queue, void *data)
         }
     }
 
+    // data was not found in the queue
     return -1;
 }
 
