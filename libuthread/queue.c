@@ -74,11 +74,9 @@ int queue_enqueue(queue_t queue, void *data)
 
 int queue_dequeue(queue_t queue, void **data)
 {
-    // check if queue or oldest data is NULL
+    // check if queue is null
     // if head and tail are the same, then queue is empty
-    if (queue == NULL
-        || queue->item[queue->head] == NULL
-        || (queue->head == queue->tail)) {
+    if (queue == NULL || (queue->head == queue->tail)) {
         return - 1;
     }
 
@@ -90,6 +88,11 @@ int queue_dequeue(queue_t queue, void **data)
 
     // update head to the next oldest item
     queue->head = queue->head + 1;
+
+    // check if data is null
+    if (*data == NULL) {
+        return -1;
+    }
 
     return 0;
 }
@@ -149,84 +152,5 @@ int queue_iterate(queue_t queue, queue_func_t func, void *arg, void **data)
 
 int queue_length(queue_t queue)
 {
-    return queue->tail;
+    return queue->tail - queue->head;
 }
-
-
-
-
-/*
-
-// UNIT TESTING BELOW
-
-void test_create(void)
-{
-    queue_t q;
-
-    q = queue_create();
-    assert(q != NULL);
-}
-
-void test_queue_simple(void)
-{
-    queue_t q;
-    int data = 3, *ptr;
-
-    q = queue_create();
-    queue_enqueue(q, &data);
-    queue_dequeue(q, (void**)&ptr);
-    assert(ptr == &data);
-}
-
-static int inc_item(void *data, void *arg)
-{
-    int *a = (int*)data;
-    int inc = (int)(long)arg;
-
-    *a += inc;
-
-    return 0;
-}
-
-static int find_item(void *data, void *arg)
-{
-    int *a = (int*)data;
-    int match = (int)(long)arg;
-
-    if (*a == match)
-        return 1;
-
-    return 0;
-}
-
-void test_iterator(void)
-{
-    queue_t q;
-    int data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    int i;
-    int *ptr;
-
-    q = queue_create();
-    for (i = 0; i < sizeof(data) / sizeof(data[0]); i++)
-        queue_enqueue(q, &data[i]);
-
-    queue_iterate(q, inc_item, (void*)1, NULL);
-    assert(data[0] == 2);
-
-    ptr = NULL;
-    queue_iterate(q, find_item, (void*)5, (void**)&ptr);
-    assert(ptr != NULL);
-    assert(*ptr == 5);
-    assert(ptr == &data[3]);
-}
-
-int main(int argc, char *argv[]) {
-
-    test_create();
-    test_queue_simple();
-    test_iterator();
-    
-
-    return 0;
-}
-*/

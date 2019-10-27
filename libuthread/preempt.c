@@ -64,8 +64,8 @@ void preempt_start(void)
     // and repeat every 10 milliseconds
     struct itimerval timer;
     timer.it_interval.tv_sec = 0;
-    timer.it_interval.tv_usec = 100;
+    timer.it_interval.tv_usec = HZ * 100;
     timer.it_value.tv_sec = 0;
-    timer.it_value.tv_usec = 100;
+    timer.it_value.tv_usec = HZ * 100;
     setitimer(ITIMER_VIRTUAL, &timer, NULL);
 }
