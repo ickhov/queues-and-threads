@@ -1,6 +1,6 @@
 # ECS150P2
 
-**Uthread API**
+## Uthread API
 
 ```c
 typedef struct{
@@ -67,7 +67,7 @@ parent by setting the joinedWithTID value of the child to the parent's TID. This
 is done so that when the child exits, it can find the parent and unblock it. 
 
 
-**Preempt API**
+## Preempt API
 
 ```c
 void sigvtalrm_handler(int signum)
@@ -85,7 +85,7 @@ timer interrupt every 10 milliseconds and *timer.it_value.tv_usec* to repeat
 every 10 milliseconds. 
 
 
-**Queue API**
+## Queue API
 
 ```c
 queue_t queue_create(void)
