@@ -146,7 +146,9 @@ In this function, we set up the *sigset_t sig_mask* global variable that is used
 flags to 0 as default (same as using signal). We also set up a timer that would stop after 10 milliseconds using the *timer.it_value.tv_usec* variable and repeat every 10 milliseconds after that using the *timer.it_interval.tv_usec* variable.
 
 ## Testing Preempt
-We test our queue using test_preempt.c. Inside this file, we created 3 threads with no yield functions. The output is unpredictable, but all the threads output its respective print statement which implies that preempt is working. NOTE: In order to test preempt you will need to set *allow_preempt* static variable to 1 at the top of *uthread.c* file.
+We test our queue using test_preempt.c. Inside this file, we created 3 threads with no yield functions. The output is unpredictable, but all the threads output its respective print statement which implies that preempt is working. 
+
+NOTE: In order to test preempt you will need to set *allow_preempt* static variable to 1 at the top of *uthread.c* file.
 
 ## Sources we used to write preempt
 We used the example from this [website](http://www.informit.com/articles/article.aspx?p=23618&seqNum=14) to help us write *preempt_start()*.
