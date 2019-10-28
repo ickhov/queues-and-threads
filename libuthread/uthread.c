@@ -267,13 +267,14 @@ int uthread_join(uthread_t tid, int *retval)
             queue_destroy(threads);
             threads = NULL;
         }*/
-/*
-        if (queue_length(threads) == 0) {
+
+        if (queue_length(threads) == 0 
+            && queue_length(blocked_threads) == 0) {
             free(currentTCB);
             queue_destroy(threads);
             threads = NULL;
             printf("No more stuff to run\n");
-        }*/
+        }
 
         //preempt_enable();
     } else {
