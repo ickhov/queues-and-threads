@@ -49,7 +49,7 @@ int queue_length(queue_t queue)
 In this function, we just return the actual length of the queue doing *tail* minus *head*. We used these variables to get the length rather the *size* variable because we are used them to track the beginning and end of the queue while *size* is used to realloc more space for the queue.
 
 ## Testing Queue
-We test our queue using test_queue.c. Inside this file, we created individual functions to test each implementation in queue. The test files essentially tests for failure and success cases we described for each function above.
+We test our queue using test_queue.c. Inside this file, we created individual functions to test each implementation in queue. The test files essentially tests for the failure and success cases we described for each function above.
 
 
 ## Uthread API
