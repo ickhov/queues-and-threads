@@ -17,6 +17,7 @@ static ucontext_t ctx[THREAD_SIZE];
 static uthread_t TID = 0;                // should be updated in uthread_create
 static queue_t threads = NULL;            // should be created in uthread_create
 static queue_t blocked_threads = NULL;
+static int allow_preempt = 1; // 0 = test without preempt, 1 = test with preempt
 
 typedef struct
 {
@@ -59,7 +60,8 @@ TCB* getNextAvailableRunnableThread(void) {
 
 void uthread_yield(void)
 {
-    preempt_disable();
+    if (allow_preempt)
+        preempt_disable();
 
     previousTCB = currentTCB;
     currentTCB = getNextAvailableRunnableThread();
@@ -108,7 +110,8 @@ uthread_t uthread_self(void)
 
 int uthread_create(uthread_func_t func, void *arg)
 {
-    preempt_disable();
+    if (allow_preempt)
+        preempt_disable();
 
     // increment TID for a new thread
     TID = TID + 1;
@@ -137,7 +140,8 @@ int uthread_create(uthread_func_t func, void *arg)
         blocked_threads = queue_create();
 
         // init preempt
-        preempt_start();
+        if (allow_preempt)
+            preempt_start();
 
         // initialize main thread
         TCB *mainTCB = (TCB *) malloc(sizeof(TCB));
@@ -165,7 +169,8 @@ int uthread_create(uthread_func_t func, void *arg)
     // since TID is global and can change with context switch
     int tid = TID;
 
-    preempt_enable();
+    if (allow_preempt)
+        preempt_enable();
 
     return tid;
 }
@@ -182,7 +187,8 @@ void uthread_exit(int retval)
     // check if this thread was joined
     if (current->joinedWithTID != -1) {
 
-        preempt_disable();
+        if (allow_preempt)
+            preempt_disable();
 
         // here we can collect the value since thread tid has exited
         TCB *parentTCB = NULL;
@@ -200,7 +206,8 @@ void uthread_exit(int retval)
         queue_delete(blocked_threads, parentTCB);
         queue_enqueue(threads, parentTCB);
 
-        preempt_enable();
+        if (allow_preempt)
+            preempt_enable();
 
     }
 
@@ -219,14 +226,16 @@ int uthread_join(uthread_t tid, int *retval)
         return -1;
     }
 
-    preempt_disable();
+    if (allow_preempt)
+        preempt_disable();
 
     TCB *targetTCB = NULL;
 
     // find thread tid
     queue_iterate(threads, find_tcb_by_tid, (void*)&tid, (void **)&targetTCB);
 
-    preempt_enable();
+    if (allow_preempt)
+        preempt_enable();
 
     // make sure that thread tid exists
     if (targetTCB != NULL) {
@@ -249,7 +258,8 @@ int uthread_join(uthread_t tid, int *retval)
             *retval = targetTCB->retval;
         }
 
-        preempt_disable();
+        if (allow_preempt)
+            preempt_disable();
 
         // free thread tid resources
         // exited TCB is never added back into queue
@@ -257,14 +267,19 @@ int uthread_join(uthread_t tid, int *retval)
         free(targetTCB);
 
         if (currentTCB->TID == 0) {
+
+            while(queue_destroy(threads) == -1) {
+                uthread_yield();
+            }
+
             free(currentTCB);
-            queue_destroy(threads);
             queue_destroy(blocked_threads);
             threads = NULL;
             blocked_threads = NULL;
         }
 
-        preempt_enable();
+        if (allow_preempt)
+            preempt_enable();
     } else {
         // thread tid cannot be found
         return -1;

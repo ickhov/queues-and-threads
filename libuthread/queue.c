@@ -38,12 +38,6 @@ int queue_destroy(queue_t queue)
         return -1;
     }
 
-    for (int i = queue->head; i < queue->tail; i++) {
-        if (queue->item[i] != NULL) {
-            free(queue->item[i]);
-        } 
-    }
-
     free(queue->item);
     free(queue);
 
@@ -110,7 +104,7 @@ int queue_delete(queue_t queue, void *data)
         return - 1;
     }
 
-    for (int i = 0; i < queue->tail; i++) {
+    for (int i = queue->head; i < queue->tail; i++) {
         // check if the pointers are the same
         if (queue->item[i] == data) {
 

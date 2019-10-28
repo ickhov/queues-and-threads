@@ -30,11 +30,8 @@ int thread2(void* arg)
 
 int thread1(void* arg)
 {
-	int tid = uthread_create(thread2, NULL);
-	int retval;
-	uthread_join(tid, &retval);
-	printf("thread1: self is %d and retval is %d\n", uthread_self(), retval);
-	uthread_yield();
+	uthread_create(thread2, NULL);
+	printf("thread1: self is %d\n", uthread_self());
 	return 0;
 }
 
