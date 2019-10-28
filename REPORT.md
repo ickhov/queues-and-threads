@@ -122,13 +122,14 @@ typedef struct{
 ```c
 void uthread_yield(void)
 ```
-In this function, before continuing to perform operations, we set the *current
-TCB struct* pointer to point to the next available item from the queue and check
-if it is NULL to determine if there are avaiable threads to run. If the previous
-thread's status isn't set to *exited*, we set its status to *ready to run* and
-put it into the queue of threads to be run later if it is not *blocked*. If it
-is *blocked*, we put it into the queue of *blocked* threads. Then, we set the
-current thread status to *running* and perform a context switch.
+In this function, before continuing to perform operations, we save the previous
+thread and then set the *current TCB struct* pointer to point to the next
+available thread from the queue and check if it is NULL to determine if there
+are avaiable threads to run. If the previous thread's status isn't set to
+*exited*, we set its status to *ready to run* and put it into the queue of
+threads to be run later if it is not *blocked*. If it is *blocked*, we put it
+into the queue of *blocked* threads. Then, we set the current thread's status to
+*running* and perform a context switch.
 
 ```c
 static int find_tcb_by_tid(void *data, void *arg)
@@ -142,14 +143,14 @@ function parameter in *queue_iterate()*.
 int uthread_create(uthread_func_t func, void *arg)
 ```
 In this function we first check to make sure that the number of threads created
-has not exceeded the maximum number of threads. Then we create a stack pointer
-and make sure that it is not NULL in case if it fails due to lack of memory
+has not exceeded the maximum number of threads allowed. Then we create a stack
+pointer and make sure that it is not NULL in case it fails due to lack of memory
 space. We initialize the context object for the thread and make sure that it not
--1 incase of a context overflow. We check to see if the queue of threads is
-NULL, if it is, then it is the first time function is called and we create a
-*TCB struct* pointer for the main thread before creating a *TCB struct* pointer
-for the current thread. Then we add the current *TCB struct* pointer to the
-queue and return the tid of the created thread. 
+-1 due to a context overflow. We check to see if the queue of threads is NULL,
+if it is, then it is the first time function is called and we create a *TCB
+struct* pointer for the main thread before creating a *TCB struct* pointer for
+the current thread. Then we add the current *TCB struct* pointer to the queue
+and return the thread ID of the newly created thread. 
 
 ```c
 void uthread_exit(int retval)
@@ -164,23 +165,22 @@ thread has a parent, we call *uthread_yield()*.
 ```c
 int uthread_join(uthread_t tid, int *retval)
 ```
-In this function, before performing any operations, we check to see if the
-thread ID of the thread to be joined or the current thread's thread ID is not
-the main thread. If either of these conditions is true, we immediately return
--1. Before continuing, we check to see if the target (child) *TCB struct*
-pointer is NULL to make sure that the the thread to be joined exists and we
+In this function, before performing any operations, we check to make sure that
+both the parent and child thread are not main thread. If either of them are, we
+immediately return -1. Before continuing, we check to see if the target (child)
+*TCB struct* pointer is NULL to make sure that the child thread exists and we
 check to see if the child thread has not joined already. If either of these
 conditions are false, we return -1 immediately. If the child thread is still
 *running*, we save the parent thread ID to the TCB of the child thread and the
 set the parent thread's state to *blocked*. It is later added to the queue of
 *blocked* threads when *uthread_yield()* is called. We save the return value of
-the child thread. We destroy the stack of *TCB struct* pointer that we created
-for the child thread and free it. Then, if the *current TCB struct* pointer is
-pointing to the main thread, we free the memory used for the queue of *ready to
-run* threads using a while loop that loops until the queue is empty and we free
-the global TCB struct pointer that was used to track the current thread. Then we
-free the memory used for the queue of *blocked* threads. We do this to avoid
-memory leans. We set both of the queues to NULL. 
+the child thread and then destroy its stack and free it. Then, if the *current
+TCB struct* pointer is pointing to the main thread, then all the threads have
+completed and we free the memory used for the queue of *ready to run* threads
+using a while loop that loops until the queue is empty. We free the global TCB
+struct pointer that was used to track the current thread and the queue of
+*blocked* threads. We do this to prevent potential memory leans. We set both of
+the queues to NULL. 
 
 
 ## Testing Uthread
