@@ -15,7 +15,7 @@ struct queue {
 ```c
 queue_t queue_create(void)
 ```
-In this function, we allocated memory for a *queue struct* pointer. We check to make sure the pointer is not NULL after malloc in case it failed due to no more memory. Then, we set *item* to NULL since we're not adding any item yet and set *head*, *tail*, and *size* to 0. Then, we return the *queue struct* pointer.
+In this function, we allocated memory for a *queue struct* pointer. We check to make sure the pointer is not NULL after malloc in case it fails due to lack of memory space. Then, we set *item* to NULL since we're not adding any item yet and set *head*, *tail*, and *size* to 0. Then, we return the *queue struct* pointer.
 
 ```c
 int queue_destroy(queue_t queue)
