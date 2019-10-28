@@ -59,17 +59,14 @@ TCB* getNextAvailableRunnableThread(void) {
 
 void uthread_yield(void)
 {
-    //preempt_disable();
+    preempt_disable();
 
     previousTCB = currentTCB;
     currentTCB = getNextAvailableRunnableThread();
 
-    //signal(SIGALRM, signal_alarm_handler);
-
     // update TCB for next thread
     if (currentTCB == NULL) {
         // no available thread ready to run so go back to main
-        //uthread_ctx_switch(prev, &ctx[0]);
         currentTCB = previousTCB;
         return;
     } else {
@@ -86,12 +83,9 @@ void uthread_yield(void)
                 // set next state to "ready to run"
                 previousTCB->state = 0;
 
-                printf("Putting thread %d into queue\n", previousTCB->TID);
-
                 // put it back to the end of the queue to rerun later
                 queue_enqueue(threads, previousTCB);
             } else {
-                printf("Putting thread %d into blocked queue\n", previousTCB->TID);
 
                 // put it back to the end of the queue to rerun later
                 queue_enqueue(blocked_threads, previousTCB);
@@ -102,8 +96,6 @@ void uthread_yield(void)
         currentTCB->state = 1;
 
         cur = currentTCB->uctx;
-
-        printf("Switching from thread %d to thread %d\n", previousTCB->TID, currentTCB->TID);
 
         uthread_ctx_switch(prev, cur);
     }
@@ -116,7 +108,7 @@ uthread_t uthread_self(void)
 
 int uthread_create(uthread_func_t func, void *arg)
 {
-    //preempt_disable();
+    preempt_disable();
 
     // increment TID for a new thread
     TID = TID + 1;
@@ -144,8 +136,8 @@ int uthread_create(uthread_func_t func, void *arg)
         threads = queue_create();
         blocked_threads = queue_create();
 
-        // init //preempt
-        //preempt_start();
+        // init preempt
+        preempt_start();
 
         // initialize main thread
         TCB *mainTCB = (TCB *) malloc(sizeof(TCB));
@@ -169,28 +161,34 @@ int uthread_create(uthread_func_t func, void *arg)
 
     queue_enqueue(threads, tcb);
 
-    //preempt_enable();
+    // use local variable and return it 
+    // since TID is global and can change with context switch
+    int tid = TID;
 
-    return TID;
+    preempt_enable();
+
+    return tid;
 }
 
 void uthread_exit(int retval)
 {
-    //preempt_disable();
+    TCB *current = currentTCB;
 
     // set next state to "has exited"
-    currentTCB->state = 2;
+    current->state = 2;
 
-    currentTCB->retval = retval;
+    current->retval = retval;
 
     // check if this thread was joined
-    if (currentTCB->joinedWithTID != -1) {
+    if (current->joinedWithTID != -1) {
+
+        preempt_disable();
 
         // here we can collect the value since thread tid has exited
         TCB *parentTCB = NULL;
 
         // find the thread that thread tid joined with
-        queue_iterate(blocked_threads, find_tcb_by_tid, (void*)&currentTCB->joinedWithTID, (void **)&parentTCB);
+        queue_iterate(blocked_threads, find_tcb_by_tid, (void*)&current->joinedWithTID, (void **)&parentTCB);
 
         // unblock the parent thread
         parentTCB->state = 0;
@@ -202,10 +200,9 @@ void uthread_exit(int retval)
         queue_delete(blocked_threads, parentTCB);
         queue_enqueue(threads, parentTCB);
 
-        printf("Thread %d is scheduled to execute again\n", parentTCB->TID);
-    }
+        preempt_enable();
 
-    //preempt_enable();
+    }
 
     uthread_yield();
 }
@@ -222,14 +219,14 @@ int uthread_join(uthread_t tid, int *retval)
         return -1;
     }
 
-    //preempt_disable();
+    preempt_disable();
 
     TCB *targetTCB = NULL;
 
     // find thread tid
     queue_iterate(threads, find_tcb_by_tid, (void*)&tid, (void **)&targetTCB);
 
-    //preempt_enable();
+    preempt_enable();
 
     // make sure that thread tid exists
     if (targetTCB != NULL) {
@@ -252,31 +249,22 @@ int uthread_join(uthread_t tid, int *retval)
             *retval = targetTCB->retval;
         }
 
+        preempt_disable();
+
         // free thread tid resources
         // exited TCB is never added back into queue
         uthread_ctx_destroy_stack(targetTCB->stack);
         free(targetTCB);
 
-        //preempt_disable();
-
-        //free(currentTCB);
-
-/*
         if (currentTCB->TID == 0) {
             free(currentTCB);
             queue_destroy(threads);
+            queue_destroy(blocked_threads);
             threads = NULL;
-        }*/
-
-        if (queue_length(threads) == 0 
-            && queue_length(blocked_threads) == 0) {
-            free(currentTCB);
-            queue_destroy(threads);
-            threads = NULL;
-            printf("No more stuff to run\n");
+            blocked_threads = NULL;
         }
 
-        //preempt_enable();
+        preempt_enable();
     } else {
         // thread tid cannot be found
         return -1;

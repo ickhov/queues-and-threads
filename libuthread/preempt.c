@@ -18,8 +18,6 @@
 static sigset_t sig_mask;
 
 void sigvtalrm_handler(int signum) {
-    printf("Timer interrupt\n");
-    
     uthread_yield();
 }
 
@@ -27,22 +25,19 @@ void preempt_disable(void)
 {
     // block SIGVTALRM
     if (sigprocmask(SIG_BLOCK, &sig_mask, NULL) < 0) {
-        printf("Failed to set signal mask!\n");
+        printf("Failed to set block signal mask!\n");
         exit(1);
     }
-
-    printf("Block SIGVTALRM\n");
 }
 
 void preempt_enable(void)
 {
     // unblock SIGVTALRM
     if (sigprocmask(SIG_UNBLOCK, &sig_mask, NULL) == -1) {
-        printf("Failed to set signal mask!\n");
+        printf("Failed to set unblock signal mask!\n");
         exit(1);
     }
 
-    printf("Unblock SIGVTALRM\n");
 }
 
 void preempt_start(void)

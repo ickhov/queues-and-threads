@@ -38,6 +38,12 @@ int queue_destroy(queue_t queue)
         return -1;
     }
 
+    for (int i = queue->head; i < queue->tail; i++) {
+        if (queue->item[i] != NULL) {
+            free(queue->item[i]);
+        } 
+    }
+
     free(queue->item);
     free(queue);
 

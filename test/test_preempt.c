@@ -17,21 +17,24 @@
 
 int thread3(void* arg)
 {
-	printf("thread3 %d\n", uthread_self());
+	printf("thread3: self is %d\n", uthread_self());
 	return 0;
 }
 
 int thread2(void* arg)
 {
 	uthread_create(thread3, NULL);
-	printf("thread2 %d\n", uthread_self());
+	printf("thread2: self is %d\n", uthread_self());
 	return 0;
 }
 
 int thread1(void* arg)
 {
-	uthread_create(thread2, NULL);
-	printf("thread1 %d\n", uthread_self());
+	int tid = uthread_create(thread2, NULL);
+	int retval;
+	uthread_join(tid, &retval);
+	printf("thread1: self is %d and retval is %d\n", uthread_self(), retval);
+	uthread_yield();
 	return 0;
 }
 
