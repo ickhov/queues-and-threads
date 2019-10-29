@@ -16,57 +16,52 @@ struct queue {
 ```c
 queue_t queue_create(void)
 ```
-In this function, we allocated memory for a *queue struct* pointer. We check to
-make sure the pointer is not NULL after malloc in case it fails due to lack of
-memory space. Then, we set *item* to NULL since we're not adding any item yet
-and set *head*, *tail*, and *size* to 0. Then, we return the *queue struct*
+In this function, we allocated memory for a *queue struct* pointer. Then, we set *item* to NULL since we're not adding any item yet, set *head*, *tail*, and *size* to 0, and return the *queue struct*
 pointer.
 
 ```c
 int queue_destroy(queue_t queue)
 ```
-In this function, before we perform any operation, we check to make sure the
-*queue* is not null and it's empty. If either one of these conditions is false,
-then we return -1 immediately. If both are true, we deallocate the memory for
-the *item* pointer array variable in the queue and the queue itself. We don't
+In this function, before we perform any operation, we check to make sure
+*queue* is not null and empty. If either one of these conditions is false,
+then we return -1. Else, we deallocate the memory for *item* pointer array along with the queue. We don't
 deallocate the memory for the pointers inside the *item* pointer array because
 they are handled in *uthread_exit()* and *uthread_join()* function.
 
 ```c
 int queue_enqueue(queue_t queue, void *data)
 ```
-In this function, before we perform any operation, we check to make sure the
-*queue* and the *data* are not NULL. If either one of them are NULL, then we
-return -1 immediately. If both are true, we continue to check to make sure that
+In this function, before we perform any operation, we check to make sure
+*queue* and *data* are not NULL. If either one of them is NULL, then we
+return -1. Else, we continue to check to make sure that
 there's enough room in the *item* pointer array to store a new *data* pointer.
 If not, we reallocate the *item* pointer array with 5 more spaces than before.
-We chose this approach to minimize the amount of time we have to call realloc
-and to minimize the amount of memory we have to make for the *item* pointer
-array itself. As always, after calling realloc, we check to make sure it was
-successful. After doing these checks, we add the *data* pointer to the end of
+We chose this approach to minimize the amount of realloc calls
+and memory we have to make for the *item* pointer
+array itself. After doing these checks, we add the *data* pointer to the end of
 the *item* pointer array and increment *tail* by 1 when we need to enqueue
 again.
 
 ```c
 int queue_dequeue(queue_t queue, void **data)
 ```
-In this function, before we perform any operation, we check to make sure the
+In this function, before we perform any operation, we check to make sure
 *queue* is not NULL and has data in it. If either one of these conditions is
-false, then we return -1 immediately. If both are true, we dereference *data*
+false, then we return -1. Else, we dereference *data*
 and set it equal to the first item in the queue using the *head* variable as the
 index. Then, we set the first data in the queue to NULL and increment *head* by
 1 so we don't access that index again. Before we return data, we also check to
 make sure the value of the dereference *data* is not NULL. We believe that this
 case would rarely happen because we don't enqueue NULL data. The only time it
 would happen is when we accidentally deallocate the memory for that data in
-uthread due to a bug in our algorithm.
+uthread for an unknown reason.
 
 ```c
 int queue_delete(queue_t queue, void *data)
 ```
-In this function, before we perform any operation, we check to make sure the
+In this function, before we perform any operation, we check to make sure
 *queue* is not NULL and has data in it. If either one of these conditions is
-false, then we return -1 immediately. If both are true, then we loop through the
+false, then we return -1. Else, we loop through the
 queue to find the first instance of the *data*. Once we find the *data*, we use
 the index and starts a nested for-loop that essentially shifts every item in
 queue left by one index and return 0. For example, if the data is in index 2, we
@@ -80,9 +75,9 @@ never found the data in the queue and return -1.
 ```c
 int queue_iterate(queue_t queue, queue_func_t func, void *arg, void **data)
 ```
-In this function, before we perform any operation, we check to make sure the
+In this function, before we perform any operation, we check to make sure
 *queue* and *func* pointer are not NULL. If either one of these conditions is
-false, then we return -1 immediately. If both are true, we loop through the
+false, then we return -1. Else, we loop through the
 queue and call the function on each element in the queue. Since *func* can
 return a value, we check in an if-statement if it returns 1. If it does and
 *data* is not NULL, we dereference *data*, set it equal to the current element
@@ -98,7 +93,7 @@ while *size* is used to realloc more space for the queue.
 
 ## Testing Queue
 We test our queue using test_queue.c. Inside this file, we created individual
-functions to test each implementation in queue. The test files essentially tests
+functions to test each implementation in queue. The test files test
 for the failure and success cases we described for each function above.
 
 
@@ -106,7 +101,7 @@ for the failure and success cases we described for each function above.
 
 We created a TCB struct that contains the thread ID, the thread context, a
 stack, a state code to determine if the thread is ready, running, has exited or
-blocked, the thread ID of the parent TCB, and the return value.
+blocked, the thread ID of the child TCB, and the return value.
 
 ```c
 typedef struct{
@@ -123,70 +118,40 @@ typedef struct{
 void uthread_yield(void)
 ```
 In this function, before continuing to perform operations, we save the previous
-thread and then set the *current TCB struct* pointer to point to the next
-available thread from the queue and check if it is NULL to determine if there
-are avaiable threads to run. If the previous thread's status isn't set to
-*exited*, we set its status to *ready to run* and put it into the queue of
-threads to be run later if it is not *blocked*. If it is *blocked*, we put it
-into the queue of *blocked* threads. Then, we set the current thread's status to
+thread and then set the current thread to the next
+available thread from the queue. If the current thread is NULL, then we return. If it's not NULL, then we check if the previous thread has already exited. If so, then we don't add it back to the queue. If it hasn't exited, then we check the TCB state and either add it to the *ready* or *blocked* threads. Then, we set the current thread's status to
 *running* and perform a context switch.
 
 ```c
-static int find_tcb_by_tid(void *data, void *arg)
+uthread_t uthread_self(void)
 ```
-In this function we check to see if the thread ID in the argument matches any of
-the thread ID's of the threads inside the queue. If there is a match, the
-address of the *TCB struct* associated with the thread ID is passed back as a
-function parameter in *queue_iterate()*.
+In this function, we return the TID of the current running thread.
 
 ```c
 int uthread_create(uthread_func_t func, void *arg)
 ```
-In this function we first check to make sure that the number of threads created
-has not exceeded the maximum number of threads allowed. Then we create a stack
-pointer and make sure that it is not NULL in case it fails due to lack of memory
-space. We initialize the context object for the thread and make sure that it not
--1 due to a context overflow. We check to see if the queue of threads is NULL,
-if it is, then it is the first time function is called and we create a *TCB
-struct* pointer for the main thread before creating a *TCB struct* pointer for
-the current thread. Then we add the current *TCB struct* pointer to the queue
-and return the thread ID of the newly created thread. 
+In this function, we do multiple checks to make sure there's no thread overflow and there's enough memory for malloc before doing any operation. Then we create the *ready* and *blocked* queues if it was called for the first time. Then, we create a *TCB* pointer to represent a new thread, add it to the queue and return its thread ID.
 
 ```c
 void uthread_exit(int retval)
 ```
 In this function, before performing any operations, we check to see if the
-current thread has a parent. If the current thread has a parent we search for
-the thread with the *queue_iterate()* and *find_tcb_by_tid()* functions and
-unblock the parent thread, remove it from the blocked threads queue and add it
+current thread has a parent. If the current thread has a parent, we search for
+the parent thread with the *queue_iterate()* function,
+unblock it, remove it from the blocked threads queue and add it
 to the running threads queue. Then, regardless of whether or not the current
 thread has a parent, we call *uthread_yield()*.
 
 ```c
 int uthread_join(uthread_t tid, int *retval)
 ```
-In this function, before performing any operations, we check to make sure that
-both the parent and child thread are not main thread. If either of them are, we
-immediately return -1. Before continuing, we check to see if the target (child)
-*TCB struct* pointer is NULL to make sure that the child thread exists and we
-check to see if the child thread has not joined already. If either of these
-conditions are false, we return -1 immediately. If the child thread is still
-*running*, we save the parent thread ID to the TCB of the child thread and the
-set the parent thread's state to *blocked*. It is later added to the queue of
-*blocked* threads when *uthread_yield()* is called. We save the return value of
-the child thread and then destroy its stack and free it. Then, if the *current
-TCB struct* pointer is pointing to the main thread, then all the threads have
-completed and we free the memory used for the queue of *ready to run* threads
-using a while loop that loops until the queue is empty. We free the global TCB
-struct pointer that was used to track the current thread and the queue of
-*blocked* threads. We do this to prevent potential memory leans. We set both of
-the queues to NULL. 
-
+In this function, before performing any operations, we check to make sure that thread tid is not the main thread and the current thread. Then, we find thread tid in the *ready* queue using *queue_iterate()*. If we can't find it, then we return -1. Else, we check to make sure it hasn't alreayd been joined with the current thread before proceeding. Then, if the thread tid has not exited yet, then we block the current thread and do a context switch. After we return to the current thread, we deallocate memory related to the child thread. If the current thread happens to be the main thread, then we do context switch until we successfully destroy the *ready* queue so we can deallocate memory from the main thread *TCB* and destroy *blocked* queue.
 
 ## Testing Uthread
-... NOTE: In order to test queue you will need to set *allow_preempt* static
-variable to 0 at the top of *uthread.c* file. This will prevent preempt from
-running in uthread and allow for deterministic behavior.
+We test our uthread using 3 seperate files: uthread_hello (tests *uthread_create()*), uthread_yield, and uthread_join.
+
+NOTE: In order to test queue you will need to set *allow_preempt* static
+variable to 0 at the top of *uthread.c* file.
 
 
 ## Preempt API
@@ -213,15 +178,12 @@ void preempt_start(void)
 ```
 In this function, we set up the *sigset_t sig_mask* global variable that is used
 to block and unblock the *SIGVTALRM* signal. We set up sigaction with the
-sigvtalrm_handler function and set the flags to 0 as default (same as using
-signal). We also set up a timer that would stop after 10 milliseconds using the
-*timer.it_value.tv_usec* variable and repeat every 10 milliseconds after that
-using the *timer.it_interval.tv_usec* variable.
+sigvtalrm_handler function and set the flags to 0 as default. We also set up a timer that would stop after 10 milliseconds and repeat every 10 milliseconds after that.
 
 ## Testing Preempt
-We test our queue using test_preempt.c. Inside this file, we created 3 threads
-with no yield functions. The output is unpredictable, but all the threads output
-its respective print statement which implies that preempt is working. 
+We test our queue using test_preempt.c in which we created 3 threads
+with no yield functions. The output is unpredictable, but all the threads print
+its respective *printf* statement which implies that preempt is working. 
 
 NOTE: In order to test preempt you will need to set *allow_preempt* static
 variable to 1 at the top of *uthread.c* file.

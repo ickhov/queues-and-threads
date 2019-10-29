@@ -22,6 +22,8 @@ void test_create()
 
     q = queue_create();
     assert(q != NULL);
+
+    queue_destroy(q);
 }
 
 void test_destroy()
@@ -51,7 +53,7 @@ void test_destroy()
 void test_enqueue()
 {
     queue_t q;
-    int data = 3;
+    int data = 3, *ptr;
 	int retval = 0;
 
 	// -1 when queue is NULL
@@ -67,6 +69,9 @@ void test_enqueue()
 	// 0 if data was successfully enqueued in queue.
     retval = queue_enqueue(q, &data);
     assert(retval == 0);
+
+    queue_dequeue(q, (void**)&ptr);
+    queue_destroy(q);
 }
 
 void test_dequeue()
@@ -94,6 +99,8 @@ void test_dequeue()
 	// -1 if queue is empty
 	retval = queue_dequeue(q, (void**)&ptr);
 	assert(retval == -1);
+
+    queue_destroy(q);
 }
 
 void test_delete() {
@@ -129,6 +136,9 @@ void test_delete() {
     queue_dequeue(q, (void**)&ptr);
 	assert(*ptr == data2);
     assert(ptr == &data2);
+
+    queue_dequeue(q, (void**)&ptr);
+    queue_destroy(q);
 }
 
 /* Callback function that increments items by a certain value */
@@ -187,6 +197,11 @@ void test_iterator()
     assert(ptr != NULL);
     assert(*ptr == 5);
     assert(ptr == &data[3]);
+
+    for (i = 0; i < sizeof(data) / sizeof(data[0]); i++)
+        queue_dequeue(q, (void**)&ptr);
+
+    queue_destroy(q);
 }
 
 void test_length()
@@ -207,6 +222,14 @@ void test_length()
 
 	retval = queue_length(q);
 	assert(retval == 2);
+
+    queue_dequeue(q, (void**)&ptr);
+
+	retval = queue_length(q);
+	assert(retval == 1);
+
+    queue_dequeue(q, (void**)&ptr);
+    queue_destroy(q);
 }
 
 int main(void)

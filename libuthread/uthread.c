@@ -17,7 +17,7 @@ static ucontext_t ctx[THREAD_SIZE];
 static uthread_t TID = 0;                // should be updated in uthread_create
 static queue_t threads = NULL;            // should be created in uthread_create
 static queue_t blocked_threads = NULL;
-static int allow_preempt = 1; // 0 = test without preempt, 1 = test with preempt
+static int allow_preempt = 0; // 0 = test without preempt, 1 = test with preempt
 
 typedef struct
 {
@@ -268,6 +268,7 @@ int uthread_join(uthread_t tid, int *retval)
 
         if (currentTCB->TID == 0) {
 
+            // make sure we run every thread that's still alive
             while(queue_destroy(threads) == -1) {
                 uthread_yield();
             }
