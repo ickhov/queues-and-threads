@@ -180,7 +180,7 @@ function. We also set up a timer that would run for 10 milliseconds and repeat
 every 10 milliseconds.
 
 ## Testing Preempt
-We test our queue using test_preempt.c in which we created 3 threads with no
+We test our preempt using test_preempt.c in which we created 3 threads with no
 yield functions. The output is unpredictable, but all the threads print its
 respective *printf* statement which implies that preempt is working. 
 

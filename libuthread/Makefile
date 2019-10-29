@@ -5,11 +5,18 @@ deps := queue.d uthread.d context.d preempt.d
 
 CC := gcc
 CFLAGS := -Wall -Werror
-CFLAGS += -g
 PANDOC := pandoc
 
 ifneq ($(V),1)
 Q = @
+endif
+
+## Debug flag
+ifneq ($(D),1)
+CFLAGS	+= -O2
+else
+CFLAGS	+= -O0
+CFLAGS	+= -g
 endif
 
 all: $(lib) 
@@ -24,10 +31,6 @@ $(lib): $(objs)
 %.o: %.c
 	@echo "CC $@"
 	$(Q)$(CC) $(CFLAGS) -c -o $@ $< $(DEPFLAGS)
-
-%.html: %.md
-	@echo "MD $@"
-	$(Q)$(PANDOC) -o $@ $<
 
 clean:
 	@echo "clean"
