@@ -17,7 +17,7 @@ static ucontext_t ctx[THREAD_SIZE];
 static uthread_t TID = 0;                // should be updated in uthread_create
 static queue_t threads = NULL;            // should be created in uthread_create
 static queue_t blocked_threads = NULL;
-static int allow_preempt = 0; // 0 = test without preempt, 1 = test with preempt
+static int allow_preempt = 1; // 0 = test without preempt, 1 = test with preempt
 
 typedef struct
 {
@@ -209,6 +209,12 @@ void uthread_exit(int retval)
         if (allow_preempt)
             preempt_enable();
 
+    } else {
+        // free thread tid stack since we don't need it anymore
+        uthread_ctx_destroy_stack(current->stack);
+
+        // exited TCB is never added back into queue so free it
+        free(current);
     }
 
     uthread_yield();
@@ -251,6 +257,9 @@ int uthread_join(uthread_t tid, int *retval)
             currentTCB->state = 3;
 
             uthread_yield();
+
+            if (allow_preempt)
+                preempt_enable();
         }
 
         // set the retval
@@ -261,9 +270,10 @@ int uthread_join(uthread_t tid, int *retval)
         if (allow_preempt)
             preempt_disable();
 
-        // free thread tid resources
-        // exited TCB is never added back into queue
+        // free thread tid stack since we don't need it anymore
         uthread_ctx_destroy_stack(targetTCB->stack);
+
+        // exited TCB is never added back into queue so free it
         free(targetTCB);
 
         if (currentTCB->TID == 0) {
@@ -271,6 +281,9 @@ int uthread_join(uthread_t tid, int *retval)
             // make sure we run every thread that's still alive
             while(queue_destroy(threads) == -1) {
                 uthread_yield();
+
+                if (allow_preempt)
+                    preempt_enable();
             }
 
             free(currentTCB);

@@ -149,8 +149,8 @@ deallocate memory from the main thread *TCB* and destroy *blocked* queue.
 We test our uthread using 3 seperate files: uthread_hello (tests
 *uthread_create()*), uthread_yield, and uthread_join. 
 
-NOTE: In order to test queue you will need to set *allow_preempt* static
-variable to 0 at the top of *uthread.c* file.
+NOTE: In order to test uthread, you will need to set *allow_preempt* static
+variable to 0 at the top of *uthread.c* file for deterministic output.
 
 ## Preempt API
 
@@ -190,8 +190,8 @@ variable to 1 at the top of *uthread.c* file.
 # Preempt usage in uthread
 We disable preempt every time we call a queue-related function and enable it
 after those calls. We also disable preempt at the start of yield and enable it
-after we call a yield a in thread since that thread will resume running at one
-point.
+after we call yield since that thread will resume running at one point. We don't
+enable preempt after yield in exit since we will never run that thread again.
 
 ## Sources we used to write preempt
 We used the example from this
