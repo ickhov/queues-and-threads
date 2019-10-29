@@ -1,37 +1,34 @@
 # Target library
-
 lib := libuthread.a
+objs := queue.o uthread.o context.o preempt.o
+deps := queue.d uthread.d context.d preempt.d
 
-all: $(lib)
+CC := gcc
+CFLAGS := -Wall -Werror
+CFLAGS += -g
+PANDOC := pandoc
 
-## TODO: Phase 1.1
+ifneq ($(V),1)
+Q = @
+endif
 
-# $(lib): queue.o uthread context.o preempt.o
-# 	ar rcs $(lib) queue.o uthread context.o preempt.o
-$(lib): queue.o uthread.o context.o preempt.o
-	ar rcs $(lib) queue.o uthread.o context.o preempt.o
+all: $(lib) 
 
-queue.o: queue.c queue.h
-	gcc -Wall -Werror -c -g queue.c
+dep := $(patsubst %.o,%.d,$(objs))
+-include $(deps)
+DEPFLAGS = -MMD -MF $(@:.o=.d)
 
-# SHOULD BE REMOVED LATER ON
-# queue.o: queue.c queue.h
-	# gcc -Wall -Werror -c queue.c
+$(lib): $(objs)
+	$(Q) ar rcs $@ $^
 
-context.o: context.c context.h preempt.h uthread.h
-	gcc -Wall -Werror -c -g context.c
+%.o: %.c
+	@echo "CC $@"
+	$(Q)$(CC) $(CFLAGS) -c -o $@ $< $(DEPFLAGS)
 
-preempt.o: preempt.c preempt.h uthread.h
-	gcc -Wall -Werror -c -g preempt.c
-
-# SHOULD BE REMOVED LATER ON
-# uthread.o: uthread.c uthread.h queue.o context.o preempt.o
-uthread.o: uthread.c uthread.h queue.h context.h preempt.h
-	gcc -Wall -Werror -c -g uthread.c
+%.html: %.md
+	@echo "MD $@"
+	$(Q)$(PANDOC) -o $@ $<
 
 clean:
-	rm -rf *.a *.o
-
-# SHOULD BE REMOVED LATER ON
-#qclean:
-#	rm -rf queue uthread *.o
+	@echo "clean"
+	$(Q)rm -f $(lib) $(objs) $(deps)
