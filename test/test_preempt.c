@@ -1,13 +1,9 @@
 /*
- * Thread creation and yielding test
+ * Thread preemption
  *
- * Tests the creation of multiples threads and the fact that a parent thread
- * should get returned to before its child is executed. The way the printing,
- * thread creation and yielding is done, the program should output:
- *
- * thread1
- * thread2
- * thread3
+ * It should run all the threads even without calling yield.
+ * The output is unpredictable.
+ * 
  */
 
 #include <stdio.h>
